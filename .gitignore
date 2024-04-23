@@ -3,3 +3,7 @@
 setup.py
 CMakeLists.txt.user
 site
+build/
+install/
+CMakePresets.json
+CMakeUserPresets.json

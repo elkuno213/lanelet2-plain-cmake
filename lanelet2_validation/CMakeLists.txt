@@ -1,81 +1,80 @@
-set(MRT_PKG_VERSION 4.0.0)
-# Modify only if you know what you are doing!
-cmake_minimum_required(VERSION 3.5.1)
-project(lanelet2_validation)
+# ──────────────────────────────────────────────────────────────────────────── #
+# Add targets #
 
-###################
-## Find packages ##
-###################
-find_package(mrt_cmake_modules REQUIRED)
-include(UseMrtStdCompilerFlags)
-include(GatherDeps)
+add_library(validation SHARED)
+add_library(${PROJECT_NAME}::validation ALIAS validation)
+target_sources(validation PRIVATE
+  src/validators/CheckTags.cpp
+  src/validators/CurvatureTooBig.cpp
+  src/validators/DuplicatedPoints.cpp
+  src/validators/PointsTooClose.cpp
+  src/validators/RoutingGraphIsValid.cpp
+  src/BasicValidator.cpp
+  src/Cli.cpp
+  src/Validation.cpp
+  src/ValidatorFactory.cpp
+)
+target_include_directories(validation
+  PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  PRIVATE src
+)
+target_link_libraries(validation PUBLIC
+  Boost::boost
+  Boost::program_options
+  ${PROJECT_NAME}::core
+  ${PROJECT_NAME}::io
+  ${PROJECT_NAME}::routing
+  ${PROJECT_NAME}::projection
+  ${PROJECT_NAME}::traffic_rules
+)
+target_compile_features(validation
+  PUBLIC  cxx_auto_type
+  PRIVATE cxx_variadic_templates
+)
+set_target_properties(validation PROPERTIES
+  VERSION       ${CMAKE_PROJECT_VERSION}
+  INSTALL_RPATH $ORIGIN
+  PREFIX        lib${PROJECT_NAME}_
+)
 
-# You can add a custom.cmake in order to add special handling for this package. E.g. you can do:
-# list(REMOVE_ITEM DEPENDEND_PACKAGES <package name 1> <package name 2> ...)
-# To remove libs which cannot be found automatically. You can also "find_package" other, custom dependencies there.
-# You can also set PROJECT_INSTALL_FILES to install files that are not installed by default.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
-    include("${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
+add_executable(validator
+  tools/lanelet2_validate/main.cpp
+)
+target_link_libraries(validator validation)
+set_target_properties(validator PROPERTIES
+  VERSION       ${CMAKE_PROJECT_VERSION}
+  INSTALL_RPATH $ORIGIN/../lib
+  PREFIX        ${PROJECT_NAME}_
+)
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# Add tests #
+
+if (WITH_TESTS)
+  add_executable(test_lanelet2_validation test/lanelet2_validation.cpp)
+  target_link_libraries(test_lanelet2_validation
+    validation
+    GTest::GTest
+    GTest::Main
+  )
+  add_test(test_lanelet2_validation test_lanelet2_validation)
 endif()
 
-find_package(AutoDeps REQUIRED COMPONENTS ${DEPENDEND_PACKAGES})
+# ──────────────────────────────────────────────────────────────────────────── #
+# Installation #
 
-mrt_parse_package_xml()
+install(
+  TARGETS              validation
+                       validator
+  EXPORT               ${PROJECT_NAME}Targets
+  ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-########################
-## Add python modules ##
-########################
-# This adds a python module if located under src/{PROJECT_NAME)
-mrt_python_module_setup()
-
-mrt_glob_files(PROJECT_PYTHON_SOURCE_FILES_SRC "python_api/*.cpp")
-if (PROJECT_PYTHON_SOURCE_FILES_SRC)
-    # Add a cpp-python api library. Make sure there are no name collisions with python modules in this project
-    mrt_add_python_api( ${PROJECT_NAME}
-        FILES ${PROJECT_PYTHON_SOURCE_FILES_SRC}
-        )
-endif()
-
-############################
-## Read source code files ##
-############################
-mrt_glob_files_recurse(PROJECT_HEADER_FILES_INC "include/*.h" "include/*.hpp" "include/*.cuh")
-mrt_glob_files(PROJECT_SOURCE_FILES_INC "src/*.h" "src/*.hpp" "src/*.cuh")
-mrt_glob_files_recurse(PROJECT_SOURCE_FILES_SRC "src/*.cpp" "src/*.cu")
-
-###########
-## Build ##
-###########
-# Declare a cpp library
-mrt_add_library(${PROJECT_NAME}
-    INCLUDES ${PROJECT_HEADER_FILES_INC} ${PROJECT_SOURCE_FILES_INC}
-    SOURCES ${PROJECT_SOURCE_FILES_SRC}
-    )
-
-# Add executables in "tools"
-glob_folders(TOOL_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/tools")
-if (TOOL_DIRECTORIES)
-    # Found subfolders, add executable for each subfolder
-    foreach(TOOL_DIR ${TOOL_DIRECTORIES})
-        mrt_add_executable(${TOOL_DIR} FOLDER "tools/${TOOL_DIR}")
-    endforeach()
-else()
-    # No subfolder found, add executable and python modules for tools folder
-    mrt_add_executable(${PROJECT_NAME} FOLDER "tools")
-endif()
-
-#############
-## Install ##
-#############
-# Install all targets, headers by default and scripts and other files if specified (folders or files).
-# This command also exports libraries and config files for dependent packages and this supersedes catkin_package.
-mrt_install(PROGRAMS scripts FILES res data ${PROJECT_INSTALL_FILES})
-
-#############
-## Testing ##
-#############
-# Add test targets for cpp and python tests
-if (CATKIN_ENABLE_TESTING)
-    mrt_add_tests(test)
-    mrt_add_nosetests(test)
-endif()
+install(
+  DIRECTORY   include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)

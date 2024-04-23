@@ -1,59 +1,91 @@
-set(MRT_PKG_VERSION 4.0.0)
-# Modify only if you know what you are doing!
-cmake_minimum_required(VERSION 3.5.1)
-project(lanelet2_examples)
+# ──────────────────────────────────────────────────────────────────────────── #
+# Add examples #
 
-###################
-## Find packages ##
-###################
-find_package(mrt_cmake_modules REQUIRED)
-include(UseMrtStdCompilerFlags)
-include(GatherDeps)
+add_executable(lanelet_primitives_example
+  src/01_dealing_with_lanelet_primitives/main.cpp
+)
+target_include_directories(lanelet_primitives_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(lanelet_primitives_example PUBLIC
+  ${PROJECT_NAME}::core
+)
 
-# You can add a custom.cmake in order to add special handling for this package. E.g. you can do:
-# list(REMOVE_ITEM DEPENDEND_PACKAGES <package name 1> <package name 2> ...)
-# To remove libs which cannot be found automatically. You can also "find_package" other, custom dependencies there.
-# You can also set PROJECT_INSTALL_FILES to install files that are not installed by default.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
-    include("${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
-endif()
+add_executable(regulatory_elements_example
+  src/02_regulatory_elements/main.cpp
+)
+target_include_directories(regulatory_elements_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(regulatory_elements_example PUBLIC
+  ${PROJECT_NAME}::core
+)
 
-find_package(AutoDeps REQUIRED COMPONENTS ${DEPENDEND_PACKAGES})
+add_executable(lanelet_map_example
+  src/03_lanelet_map/main.cpp
+)
+target_include_directories(lanelet_map_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(lanelet_map_example PUBLIC
+  ${PROJECT_NAME}::core
+)
 
-mrt_parse_package_xml()
+add_executable(reading_and_writing_example
+  src/04_reading_and_writing/main.cpp
+)
+target_include_directories(reading_and_writing_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(reading_and_writing_example PUBLIC
+  ${PROJECT_NAME}::core
+  ${PROJECT_NAME}::io
+  ${PROJECT_NAME}::projection
+)
+target_compile_definitions(reading_and_writing_example PRIVATE
+  PKG_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
 
-########################
-## Add python modules ##
-########################
-# This adds a python module if located under src/{PROJECT_NAME)
-mrt_python_module_setup()
+add_executable(traffic_rules_example
+  src/05_traffic_rules/main.cpp
+)
+target_include_directories(traffic_rules_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(traffic_rules_example PUBLIC
+  ${PROJECT_NAME}::core
+  ${PROJECT_NAME}::traffic_rules
+)
 
-###########
-## Build ##
-###########
-glob_folders(SRC_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src")
-if (SRC_DIRECTORIES)
-    # Found subfolders, add executable for each subfolder
-    foreach(SRC_DIR ${SRC_DIRECTORIES})
-        mrt_add_executable(${SRC_DIR} FOLDER "src/${SRC_DIR}")
-    endforeach()
-else()
-    # No subfolder found, add executable and python modules for src folder
-    mrt_add_executable(${PROJECT_NAME} FOLDER "src")
-endif()
+add_executable(routing_example
+  src/06_routing/main.cpp
+)
+target_include_directories(routing_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(routing_example PUBLIC
+  ${PROJECT_NAME}::core
+  ${PROJECT_NAME}::io
+  ${PROJECT_NAME}::projection
+  ${PROJECT_NAME}::routing
+  ${PROJECT_NAME}::traffic_rules
+)
+target_compile_definitions(routing_example PRIVATE
+  PKG_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
 
-#############
-## Install ##
-#############
-# Install all targets, headers by default and scripts and other files if specified (folders or files).
-# This command also exports libraries and config files for dependent packages and this supersedes catkin_package.
-mrt_install(PROGRAMS scripts FILES res data ${PROJECT_INSTALL_FILES})
-
-#############
-## Testing ##
-#############
-# Add test targets for cpp and python tests
-if (CATKIN_ENABLE_TESTING)
-    mrt_add_tests(test)
-    mrt_add_nosetests(test)
-endif()
+add_executable(matching_example
+  src/07_matching/main.cpp
+)
+target_include_directories(matching_example PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(matching_example PUBLIC
+  ${PROJECT_NAME}::io
+  ${PROJECT_NAME}::projection
+  ${PROJECT_NAME}::traffic_rules
+  ${PROJECT_NAME}::matching
+)
+target_compile_definitions(matching_example PRIVATE
+  PKG_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
