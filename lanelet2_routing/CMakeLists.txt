@@ -1,69 +1,84 @@
-set(MRT_PKG_VERSION 4.0.0)
-# Modify only if you know what you are doing!
-cmake_minimum_required(VERSION 3.5.1)
-project(lanelet2_routing)
+# ──────────────────────────────────────────────────────────────────────────── #
+# Add targets #
 
-###################
-## Find packages ##
-###################
-find_package(mrt_cmake_modules REQUIRED)
-include(UseMrtStdCompilerFlags)
-include(GatherDeps)
+add_library(lanelet2_routing SHARED)
+target_sources(lanelet2_routing PRIVATE
+  src/LaneletPath.cpp
+  src/Route.cpp
+  src/RouteBuilder.cpp
+  src/RoutingCost.cpp
+  src/RoutingGraph.cpp
+  src/RoutingGraphBuilder.cpp
+)
+target_include_directories(lanelet2_routing
+  PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  PRIVATE src
+)
+target_link_libraries(lanelet2_routing PUBLIC
+  Boost::boost
+  lanelet2_core
+  lanelet2_traffic_rules
+)
+target_compile_features(lanelet2_routing
+  PUBLIC  cxx_auto_type
+  PRIVATE cxx_variadic_templates
+)
+set_target_properties(lanelet2_routing PROPERTIES
+  VERSION ${CMAKE_PROJECT_VERSION}
+)
 
-# You can add a custom.cmake in order to add special handling for this package. E.g. you can do:
-# list(REMOVE_ITEM DEPENDEND_PACKAGES <package name 1> <package name 2> ...)
-# To remove libs which cannot be found automatically. You can also "find_package" other, custom dependencies there.
-# You can also set PROJECT_INSTALL_FILES to install files that are not installed by default.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
-    include("${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake")
-endif()
+# ──────────────────────────────────────────────────────────────────────────── #
+# Add tests #
 
-find_package(AutoDeps REQUIRED COMPONENTS ${DEPENDEND_PACKAGES})
-
-mrt_parse_package_xml()
-
-########################
-## Add python modules ##
-########################
-# This adds a python module if located under src/{PROJECT_NAME)
-mrt_python_module_setup()
-
-mrt_glob_files(PROJECT_PYTHON_SOURCE_FILES_SRC "python_api/*.cpp")
-if (PROJECT_PYTHON_SOURCE_FILES_SRC)
-    # Add a cpp-python api library. Make sure there are no name collisions with python modules in this project
-    mrt_add_python_api( ${PROJECT_NAME}
-        FILES ${PROJECT_PYTHON_SOURCE_FILES_SRC}
-        )
-endif()
-
-############################
-## Read source code files ##
-############################
-mrt_glob_files_recurse(PROJECT_HEADER_FILES_INC "include/*.h" "include/*.hpp" "include/*.cuh")
-mrt_glob_files(PROJECT_SOURCE_FILES_INC "src/*.h" "src/*.hpp" "src/*.cuh")
-mrt_glob_files(PROJECT_SOURCE_FILES_SRC "src/*.cpp" "src/*.cu")
-
-###########
-## Build ##
-###########
-# Declare a cpp library
-mrt_add_library(${PROJECT_NAME}
-    INCLUDES ${PROJECT_HEADER_FILES_INC} ${PROJECT_SOURCE_FILES_INC}
-    SOURCES ${PROJECT_SOURCE_FILES_SRC}
+if (WITH_TESTS)
+  # Add test sources.
+  set(TESTS
+    test/test_lanelet_or_area_path.cpp
+    test/test_relations.cpp
+    test/test_route.cpp
+    test/test_routing.cpp
+    test/test_routing_graph_container.cpp
+    test/test_routing_visualization.cpp
+  )
+  # Add test targets.
+  foreach(TEST ${TESTS})
+    get_filename_component(TEST_NAME ${TEST} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST})
+    target_link_libraries(${TEST_NAME}
+      lanelet2_routing
+      Boost::filesystem
+      GTest::GTest
+      GTest::Main
     )
-
-#############
-## Install ##
-#############
-# Install all targets, headers by default and scripts and other files if specified (folders or files).
-# This command also exports libraries and config files for dependent packages and this supersedes catkin_package.
-mrt_install(PROGRAMS scripts FILES res data ${PROJECT_INSTALL_FILES})
-
-#############
-## Testing ##
-#############
-# Add test targets for cpp and python tests
-if (CATKIN_ENABLE_TESTING)
-    mrt_add_tests(test)
-    mrt_add_nosetests(test)
+    add_test(${TEST_NAME} ${TEST_NAME})
+  endforeach()
 endif()
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# Installation #
+
+install(
+  TARGETS              lanelet2_routing
+  EXPORT               ${PROJECT_NAME}Targets
+  ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
+  DIRECTORY   include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
+  DIRECTORY   res
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/lanelet2_routing
+)
+
+install(
+  DIRECTORY   doc
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/lanelet2_routing
+)
