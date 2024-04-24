@@ -3,6 +3,7 @@
 
 add_library(lanelet2_projection SHARED)
 target_sources(lanelet2_projection PRIVATE
+  src/CPM.cpp
   src/Geocentric.cpp
   src/LocalCartesian.cpp
   src/UTM.cpp
