@@ -4,6 +4,7 @@
 add_library(projection SHARED)
 add_library(${PROJECT_NAME}::projection ALIAS projection)
 target_sources(projection PRIVATE
+  src/CPM.cpp
   src/Geocentric.cpp
   src/LocalCartesian.cpp
   src/UTM.cpp
