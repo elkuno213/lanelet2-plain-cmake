@@ -71,6 +71,19 @@ ninja -C build test    # test
 ninja -C build install # install
 ```
 
+Test the installation by `consumer/` folder:
+
+```bash
+export CMAKE_PREFIX_PATH=$PWD/install:$CMAKE_PREFIX_PATH
+cmake -S consumer \
+      -B consumer/build \
+      -G Ninja \
+      -D CMAKE_BUILD_TYPE=Release \
+      -D CMAKE_EXPORT_COMPILE_COMMANDS=ON
+ninja -C consumer/build         # build
+./consumer/build/consumer
+```
+
 ## Examples
 Examples and common use cases in both C++ and Python can be found [here](lanelet2_examples/README.md).
 
